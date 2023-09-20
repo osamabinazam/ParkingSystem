@@ -21,12 +21,23 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 # User login Serializer
-class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # Customize the response here if needed
+        return data
 
 
 # Logout Serializer
 class UserLogoutSerializer(serializers.Serializer):
     pass
 
+
+
+
+
+    

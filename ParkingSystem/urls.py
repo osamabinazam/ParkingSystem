@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path,include
-from user.views import index_view, HomeView
+from user.views import index_view
 # Use to handle media files
 from django.conf import settings
 from django.conf.urls.static import static
@@ -11,7 +11,6 @@ urlpatterns = [
     path('', index_view, name="index"),
     path('token/', jwt_views.TokenObtainPairView.as_view(), name ='token_obtain_pair'),
     path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name ='token_refresh'),
-    path('home', HomeView.as_view() ,name='home' ),
     path('user/', include('user.urls')),                # Handle all api calls made to user
     path('reservation/', include('reservation.urls')),  # Handle all api calls made to reservations
     path('entryexit/', include('entryexit.urls')),      # Handle all api calls made to entryexit

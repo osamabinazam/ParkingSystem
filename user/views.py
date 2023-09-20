@@ -3,16 +3,20 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token
 from .models import User
+from django.conf import settings
+from reservation.models import ReservationHistory
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny  # Import AllowAny permission
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+from .serializers import  CustomTokenObtainPairSerializer, UserRegistrationSerializer
+from reservation.serializers import ReservationHistorySerializer
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth import authenticate
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
-
+from rest_framework import generics
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -50,38 +54,31 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 # User Login View to api
+from rest_framework.response import Response
+from rest_framework import status
 
-@authentication_classes([])  # Specify an empty list of authentication classes
-@permission_classes([AllowAny])  # Specify that any user (authenticated or not) is allowed
-class UserLoginView(APIView):
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            password = serializer.validated_data['password']
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                if user.user_type == 'employee':
-                    request.session['user_type'] = 'employee'
-                else:
-                    request.session['user_type'] = 'guest'
+class UserLoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
-                # User is authenticated, generate a token
-                # payload = jwt_payload_handler(user)
-                # token = jwt_encode_handler(payload)
-                response_data = {
-                    'token': token,
-                    'user_id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'expires_at': payload['exp'],  # Include token expiration time
-                    
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
-            else:
-                return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        
+        username = request.data.get('username')
+        user = User.objects.get(username= username)
+        
+        if response.status_code == status.HTTP_200_OK:
+            data = response.data
+            custom_data = {
+                'token': data['access'],
+                'refresh_token': data['refresh'],
+                'username':user.username,
+                'email':user.email
+            }
+            return Response(custom_data, status=status.HTTP_200_OK)
+        
+        # Handle other response codes here if needed
+        return response
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Logout View
@@ -89,29 +86,19 @@ class UserLoginView(APIView):
 @permission_classes([IsAuthenticated])
 class UserLogoutView(APIView):
     def post(self, request):
-        
-        if 'user_type' in request.session:
-            del request.session['user_type']
-        # try:
-        refresh_token = request.data.get('refresh_token')
-        token = RefreshToken(refresh_token)
-        print("Token is : " , token)
-        # token.blacklist()
-            # jwt_payload = api_settings.JWT_PAYLOAD_GETTER(request.user)
-            # jwt_payload['exp'] = 0
-            # token = api_settings.JWT_ENCODE_HANDLER(jwt_payload)
-        return Response({'detail': 'User logged out successfully.'}, status=status.HTTP_200_OK)
-        # except Exception as e:
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            refresh_token = request.data.get('refresh')
+            token = RefreshToken(refresh_token)
+            settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'] =None
+            return Response({'detail': 'User logged out successfully.'}, status=status.HTTP_200_OK)
 
     
 
-class HomeView(APIView):
-     
-    permission_classes = (IsAuthenticated, )
-    def get(self, request):
-        content = {'message': 'Welcome to the JWT Authentication page using React Js and Django!'}
-        return Response(content)    
+class ReservationHistoryListView(generics.ListCreateAPIView):
+    queryset = ReservationHistory.objects.all()
+    serializer_class = ReservationHistorySerializer
+    permission_classes = [IsAuthenticated]
+    
 
 
 def index_view(request):

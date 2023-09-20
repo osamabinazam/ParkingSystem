@@ -1,18 +1,29 @@
 from .models import Reservation
 from django.db import transaction 
 from .serializers import ReservationSerializer
-from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from datetime import datetime, timedelta
 from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import Reservation
 from .serializers import ReservationSerializer
+from reservation.models import ReservationHistory
 
-class ReservationListCreateView(generics.ListAPIView):
-    queryset = Reservation.objects.all()
+class ReservationListCreateView(generics.ListCreateAPIView):
     serializer_class = ReservationSerializer
-    permission_classes= [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Check if a username parameter is provided in the URL
+        username_param = self.kwargs.get('username')
+
+        if username_param:
+            # If a username is provided, filter reservations by that username
+            return Reservation.objects.filter(user__username=username_param)
+        else:
+            # If no username is provided, return all reservations
+            return Reservation.objects.all()
+        
 
 class ReservationDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reservation.objects.all()
@@ -35,20 +46,20 @@ class CreateReservationView(generics.CreateAPIView):
             
             if existing_reservation  : 
                 return Response({'detail': 'This space is already reserved'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            end_time = datetime.now() + timedelta(hours=8)
 
-            user_type = self.request.session.get('user_type', 'guest')
-            if user_type == 'employee':
-                end_time = datetime.now() + timedelta(hours=8)
-            else:
-                end_time = datetime.now() + timedelta(hours=1)
-
-            serializer.save(user=user, start_time=datetime.now(), end_time=end_time)
+            reservation = serializer.save(user=user, start_time=datetime.now(), end_time=end_time)
+            
+            # Creating Entry on Reservation History
+            ReservationHistory.objects.create(user=user, parking_space=parking_space, reservation=reservation, status='Booked')
+            
             # Update the corresponding ParkingSpace object's is_reserved field to True
             parking_space.is_reserved = True
             parking_space.is_available= False
             parking_space.save()
             return Response({'detail': 'Reservation created successfully.', "space":parking_space }, status=status.HTTP_201_CREATED)
-        except e:
+        except Exception as e:
             return Response({'detail': "Model Error!, Please varify model's field and contraints"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR )
 
 
@@ -67,6 +78,8 @@ class ReservationCancelView(generics.DestroyAPIView):
                 parking_space.is_reserved = False;
 
                 parking_space.save()
+                ReservationHistory.objects.create(user=request.user, parking_space=parking_space, reservation=reservation, status='canceled')
+
 
                 reservation.delete()
                 return Response({'detail': 'Reservation canceled successfully.'}, status=status.HTTP_204_NO_CONTENT)

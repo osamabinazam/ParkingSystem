@@ -59,13 +59,6 @@ class ParkingSpaceDeleteView(generics.DestroyAPIView):
     def destroy (self, request, *args, **kwargs):
         try:
             parking_space = self.get_object()
-
-            # if parking_space.user = request.user:
-            #     parking_space.delete()
-            #     return Response({'detail': 'Space removed successfully' } , status=status.HTTP_204_NO_CONTENT )
-            # else:
-            # return return Response({'detail': 'You do not have permission to delete parking space'}, status=status.HTTP_403_FORBIDDEN)
-            
             parking_space.delete()
             return Response({'detail': 'Space removed successfully' } , status=status.HTTP_204_NO_CONTENT )
         except Exception as e:

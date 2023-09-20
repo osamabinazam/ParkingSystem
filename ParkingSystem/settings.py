@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-m8q1vvx%i(xh*3eitz=!sn5&g7-86$+e!xrt($*(#6w@zqb%=^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS =  ['*']
 
 
 # Application definition
@@ -49,9 +49,9 @@ MIDDLEWARE = [
 CORS_ORIGIN_WHITELIST = [
      'http://localhost:3000'
 ]
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:3000',
-# ]
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+]
 
 ROOT_URLCONF = 'ParkingSystem.urls'
 
@@ -59,7 +59,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [ 
-            BASE_DIR/'templates',       # Change to build path
+            BASE_DIR/'frontend',       # Change to build path
          ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -120,7 +120,7 @@ USE_TZ = True
 # Static Files Configuration
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    # os.path.join(BASE_DIR, 'frontend', 'build', 'static'),
+    os.path.join(BASE_DIR, 'frontend', 'build', 'static'),
 ]
 
 # Media Fikes Configuration
@@ -150,8 +150,8 @@ AUTH_USER_MODEL = 'user.User'
 
 
 SIMPLE_JWT = {
-     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+     'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
+     'REFRESH_TOKEN_LIFETIME': timedelta(days=365),
      'ROTATE_REFRESH_TOKENS': True,
      'BLACKLIST_AFTER_ROTATION': True
 }
