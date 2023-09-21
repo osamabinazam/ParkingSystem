@@ -67,10 +67,37 @@ class ParkingSpaceDeleteView(generics.DestroyAPIView):
         except Exception as e:
             return Response({'detail': 'Space not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-def  get_first_availablepark(request):
-    try:
-        parking = ParkingSpace.objects.filter(is_available=True).first()
-        return JsonResponse({"detail":"Slot is Available"}, status=status.HTTP_200_OK)
-    except Exception as e :
-        return JsonResponse({"detail":"Not found"}, status= status.HTTP_404_NOT_FOUND)
+
+class GetFirstAvailableParking(generics.ListAPIView):
+    serializer_class = ParkingSpaceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Retrieve the first available parking space
+        parking_space = ParkingSpace.objects.filter(is_available=True).first()
+        
+        # Return a single-item list or None if no parking space is available
+        return [parking_space] if parking_space else []
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        if queryset:
+            parking_id = queryset[0].id
+            return Response({"parking": parking_id}, status=200) # Return the first item as JSON response
+        else:
+            return Response({"detail": "No available parking slots found"}, status=404)
+# def get_first_availablepark(request):
+    # try:
+    #     parking = ParkingSpace.objects.filter(is_available=True).first()
+
+    #     if parking:
+    #         print(parking   )
+    #         # If a parking space is available, include it in the JSON response
+    #         return JsonResponse({"detail": "Slot is Available", "parking": parking.id}, status=status.HTTP_200_OK)
+    #     else:
+    #         return JsonResponse({"detail": "No available parking slots found"}, status=status.HTTP_404_NOT_FOUND)
+    # except Exception as e:
+    #     return JsonResponse({"detail": "Error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
