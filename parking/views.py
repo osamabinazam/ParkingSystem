@@ -15,6 +15,7 @@ class ParkingSpaceListView(generics.ListAPIView):
     queryset = ParkingSpace.objects.all()
     serializer_class = ParkingSpaceSerializer
     permission_classes = [IsAuthenticated]
+        
 
 # This View give additional information of particular parking space
 class ParkingSpaceViewSet(viewsets.ModelViewSet):
@@ -63,3 +64,10 @@ class ParkingSpaceDeleteView(generics.DestroyAPIView):
             return Response({'detail': 'Space removed successfully' } , status=status.HTTP_204_NO_CONTENT )
         except Exception as e:
             return Response({'detail': 'Space not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+# def  get_first_availablepark(request):
+#     parking = ParkingSpace.objects.filter(is_available=True).first()
+#     return
+    
