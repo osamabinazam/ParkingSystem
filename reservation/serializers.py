@@ -4,6 +4,22 @@ from entryexit.models import EntryExitRecord
 
 class ReservationSerializer(serializers.ModelSerializer):
     
+    
+    # start_time = serializers.SerializerMethodField()
+    # end_time = serializers.SerializerMethodField()
+    
+    # def get_reservation_time_fromat(self, obj):
+    #     # Customize the format of reservation time here
+    #     return obj.reservation_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # def get_start_time(self, obj):
+    #     # Customize the format of start time here
+    #     return obj.start_time.strftime("%Y-%m-%d %H:%M:%S") if obj.start_time else None
+
+    # def get_end_time(self, obj):
+    #     # Customize the format of end time here
+    #     return obj.end_time.strftime("%Y-%m-%d %H:%M:%S")
+    
     class Meta:
         model = Reservation
         fields = "__all__"
