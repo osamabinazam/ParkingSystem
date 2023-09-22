@@ -1,14 +1,16 @@
 from rest_framework import generics , status
 from .serializers import ParkingSpaceSerializer
 from django.http import JsonResponse
+from django.db import transaction 
 from rest_framework import viewsets
+from datetime import datetime, timedelta, timezone
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from .serializers import ParkingSpaceSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.decorators import login_required
-
+from reservation.models import Reservation
 from parking.models import ParkingSpace
 
 
@@ -17,9 +19,23 @@ class ParkingSpaceListView(generics.ListAPIView):
     queryset = ParkingSpace.objects.all()
     serializer_class = ParkingSpaceSerializer
     permission_classes = [IsAuthenticated]
-        
 
-# This View give additional information of particular parking space
+    def list(self, request, *args, **kwargs):
+        # Code to process expired reservations and update parking space status
+        expired_reservations = Reservation.objects.filter(end_time__lte=datetime.now())
+        for expired_reservation in expired_reservations:
+            reservation_history = ReservationHistory.objects.get(reservation=expired_reservation)
+            reservation_history.status = "Completed"
+            reservation_history.save()
+            expired_reservation.save()
+            expired_parking_space = expired_reservation.parking_space
+            expired_parking_space.is_reserved = False
+            expired_parking_space.is_available = True
+            expired_parking_space.save()
+
+        # Continue with the regular list view logic
+        return super().list(request, *args, **kwargs)
+        
 class ParkingSpaceViewSet(viewsets.ModelViewSet):
     queryset = ParkingSpace.objects.all()
     serializer_class = ParkingSpaceSerializer
